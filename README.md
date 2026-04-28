@@ -32,6 +32,12 @@ claude-hub is a read-only TUI that runs in its own tmux pane. It:
 
 It does not replace Claude Code. It does not talk to Claude. It's a layer of awareness on top of tmux.
 
+## Prerequisites
+
+- [tmux](https://github.com/tmux/tmux) — claude-hub must be run inside a tmux session
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — one or more running instances in tmux panes
+- [Rust toolchain](https://rustup.rs/) — for building from source
+
 ## Installation
 
 ```bash
