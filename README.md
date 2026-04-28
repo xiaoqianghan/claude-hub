@@ -1,6 +1,6 @@
 # claude-hub
 
-A TUI dashboard for monitoring multiple Claude Code sessions running in tmux.
+A TUI dashboard for monitoring multiple Claude Code sessions running in tmux. Built for developers who run several Claude Code instances in parallel across tmux sessions and need a single place to see which ones need attention.
 
 ## The Problem
 
@@ -32,13 +32,26 @@ claude-hub is a read-only TUI that runs in its own tmux pane. It:
 
 It does not replace Claude Code. It does not talk to Claude. It's a layer of awareness on top of tmux.
 
+## Installation
+
+```bash
+cargo install --path .
+```
+
+Or build and run directly:
+
+```bash
+cargo build --release
+./target/release/claude-hub
+```
+
 ## Usage
 
-```
-cargo run
-```
-
 Must be run inside a tmux session.
+
+```
+claude-hub
+```
 
 | Key | Action |
 |-----|--------|

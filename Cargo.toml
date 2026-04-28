@@ -2,6 +2,8 @@
 name = "claude-hub"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "TUI dashboard for monitoring multiple Claude Code sessions in tmux"
 
 [dependencies]
 ratatui = "0.30"
