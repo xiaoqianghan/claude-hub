@@ -11,7 +11,8 @@ pub struct TranscriptSummary {
     pub last_prompt: Option<String>,
     pub last_assistant_text: Option<String>,
     pub model: Option<String>,
-    pub total_input_tokens: u64,
+    pub last_input_tokens: u64,
+    #[allow(dead_code)]
     pub total_output_tokens: u64,
     pub turn_count: u32,
     pub git_branch: Option<String>,
@@ -80,7 +81,7 @@ pub fn analyze(cwd: &str, session_id: &str) -> TranscriptSummary {
         last_prompt: None,
         last_assistant_text: None,
         model: None,
-        total_input_tokens: 0,
+        last_input_tokens: 0,
         total_output_tokens: 0,
         turn_count: 0,
         git_branch: None,
@@ -100,7 +101,7 @@ pub fn analyze(cwd: &str, session_id: &str) -> TranscriptSummary {
     let mut last_prompt: Option<String> = None;
     let mut last_assistant_text: Option<String> = None;
     let mut model: Option<String> = None;
-    let mut total_in: u64 = 0;
+    let mut last_in: u64 = 0;
     let mut total_out: u64 = 0;
     let mut turns: u32 = 0;
     let mut last_ts: Option<String> = None;
@@ -130,7 +131,9 @@ pub fn analyze(cwd: &str, session_id: &str) -> TranscriptSummary {
                         model = Some(m.clone());
                     }
                     if let Some(usage) = &msg.usage {
-                        total_in += usage.input_tokens.unwrap_or(0);
+                        if let Some(input) = usage.input_tokens {
+                            last_in = input;
+                        }
                         total_out += usage.output_tokens.unwrap_or(0);
                     }
                     last_stop_reason = msg.stop_reason.clone();
@@ -190,7 +193,7 @@ pub fn analyze(cwd: &str, session_id: &str) -> TranscriptSummary {
         last_prompt,
         last_assistant_text,
         model,
-        total_input_tokens: total_in,
+        last_input_tokens: last_in,
         total_output_tokens: total_out,
         turn_count: turns,
         git_branch,

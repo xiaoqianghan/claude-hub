@@ -54,7 +54,7 @@ pub fn render(frame: &mut Frame, area: Rect, session: Option<&SessionInfo>) {
             Span::raw(format!("{}  ", dur_str)),
             Span::styled("Turns: ", dim),
             Span::raw(format!("{}  ", s.turn_count)),
-            Span::styled("Tokens: ", dim),
+            Span::styled("Context: ", dim),
             Span::raw(s.tokens_display()),
         ]),
         Line::from(""),

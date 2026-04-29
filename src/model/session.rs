@@ -65,8 +65,7 @@ pub struct SessionInfo {
     pub last_prompt: Option<String>,
     pub last_assistant_text: Option<String>,
     pub model: Option<String>,
-    pub total_input_tokens: u64,
-    pub total_output_tokens: u64,
+    pub last_input_tokens: u64,
     pub turn_count: u32,
     pub git_branch: Option<String>,
 
@@ -95,20 +94,21 @@ impl SessionInfo {
         }
     }
 
+    pub fn tmux_window_key(&self) -> Option<String> {
+        self.tmux_target
+            .as_ref()
+            .and_then(|t| t.rsplit_once('.'))
+            .map(|(session_window, _)| session_window.to_string())
+    }
+
     pub fn tokens_display(&self) -> String {
-        fn fmt(n: u64) -> String {
-            if n >= 1_000_000 {
-                format!("{:.1}M", n as f64 / 1_000_000.0)
-            } else if n >= 1000 {
-                format!("{}k", n / 1000)
-            } else {
-                n.to_string()
-            }
+        let n = self.last_input_tokens;
+        if n >= 1_000_000 {
+            format!("{:.1}M", n as f64 / 1_000_000.0)
+        } else if n >= 1000 {
+            format!("{}k", n / 1000)
+        } else {
+            n.to_string()
         }
-        format!(
-            "{}/{}",
-            fmt(self.total_input_tokens),
-            fmt(self.total_output_tokens)
-        )
     }
 }

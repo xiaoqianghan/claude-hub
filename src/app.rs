@@ -1,12 +1,57 @@
 use crate::data::correlator;
 use crate::model::feed::{FeedEvent, FeedEventKind};
-use crate::model::session::SessionInfo;
+use crate::model::session::{SessionInfo, SessionState};
 use anyhow::Result;
 use chrono::Utc;
 use ratatui::widgets::TableState;
 use std::collections::{HashMap, VecDeque};
 
 const MAX_FEED_EVENTS: usize = 50;
+
+fn group_by_window(sessions: Vec<SessionInfo>) -> Vec<SessionInfo> {
+    let mut groups: Vec<(String, Vec<SessionInfo>)> = Vec::new();
+    let mut ungrouped: Vec<SessionInfo> = Vec::new();
+    let mut key_index: HashMap<String, usize> = HashMap::new();
+
+    for s in sessions {
+        if let Some(key) = s.tmux_window_key() {
+            if let Some(&idx) = key_index.get(&key) {
+                groups[idx].1.push(s);
+            } else {
+                key_index.insert(key.clone(), groups.len());
+                groups.push((key, vec![s]));
+            }
+        } else {
+            ungrouped.push(s);
+        }
+    }
+
+    let mut result = Vec::new();
+    for (window_key, mut panes) in groups {
+        panes.sort_by_key(|s| s.state.sort_priority());
+        let primary = panes.remove(0);
+        let state = primary.state.clone();
+        let last_activity = std::iter::once(&primary)
+            .chain(panes.iter())
+            .filter_map(|s| s.last_activity)
+            .max();
+        let last_input_tokens = std::iter::once(&primary)
+            .chain(panes.iter())
+            .map(|s| s.last_input_tokens)
+            .max()
+            .unwrap_or(0);
+
+        result.push(SessionInfo {
+            state,
+            last_activity,
+            last_input_tokens,
+            tmux_target: Some(window_key),
+            ..primary
+        });
+    }
+    result.extend(ungrouped);
+    result
+}
 
 pub enum SortOrder {
     State,
@@ -22,13 +67,13 @@ pub struct App {
     pub sort_order: SortOrder,
     pub should_quit: bool,
     pub feed: VecDeque<FeedEvent>,
-    prev_states: HashMap<String, (crate::model::session::SessionState, String)>,
+    prev_states: HashMap<String, (SessionState, String)>,
     pending_removals: HashMap<String, String>,
 }
 
 impl App {
     pub async fn new() -> Result<Self> {
-        let sessions = correlator::build_session_list().await?;
+        let sessions = group_by_window(correlator::build_session_list().await?);
         let mut table_state = TableState::default();
         if !sessions.is_empty() {
             table_state.select(Some(0));
@@ -66,7 +111,7 @@ impl App {
             .and_then(|i| self.sessions.get(i))
             .map(|s| s.session_id.clone());
 
-        self.sessions = correlator::build_session_list().await?;
+        self.sessions = group_by_window(correlator::build_session_list().await?);
         self.detect_changes();
         self.apply_sort();
 

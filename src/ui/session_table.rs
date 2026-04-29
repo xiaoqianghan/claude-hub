@@ -16,7 +16,7 @@ pub fn render(
         Cell::from("Status"),
         Cell::from("Tmux"),
         Cell::from("Idle"),
-        Cell::from("Tokens"),
+        Cell::from("Context"),
     ])
     .style(
         Style::default()
