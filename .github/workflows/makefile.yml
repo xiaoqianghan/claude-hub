@@ -1,4 +1,4 @@
-name: Makefile CI
+name: CI
 
 on:
   push:
@@ -8,20 +8,19 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
 
-    - name: configure
-      run: ./configure
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
 
-    - name: Install dependencies
-      run: make
+    - name: Build
+      run: cargo build --verbose
 
-    - name: Run check
-      run: make check
+    - name: Run clippy
+      run: cargo clippy --all-targets -- --deny warnings
 
-    - name: Run distcheck
-      run: make distcheck
+    - name: Run tests
+      run: cargo test --verbose
