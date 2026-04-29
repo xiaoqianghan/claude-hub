@@ -1,5 +1,5 @@
 use super::truncate_chars;
-use crate::model::session::{SessionInfo, SessionState};
+use crate::model::session::SessionInfo;
 use ratatui::Frame;
 use ratatui::layout::Constraint;
 use ratatui::style::{Color, Modifier, Style};
@@ -31,13 +31,7 @@ pub fn render(
         .enumerate()
         .map(|(i, s)| {
             let status_text = format!("{} {}", s.state.symbol(), s.state.label());
-            let style = match s.state {
-                SessionState::WaitingForInput => Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-                SessionState::Working => Style::default().fg(Color::Green),
-                SessionState::Stale => Style::default().fg(Color::Red).add_modifier(Modifier::DIM),
-            };
+            let style = s.state.style();
 
             let project = truncate_chars(&s.project_name, 24);
             let tmux_label = s.tmux_target.as_deref().unwrap_or("—").to_string();

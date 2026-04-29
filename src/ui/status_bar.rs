@@ -18,7 +18,7 @@ pub fn render(frame: &mut Frame, area: Rect, in_tmux: bool) {
         Span::raw("refresh  "),
         Span::styled("s ", key),
         Span::raw("sort  "),
-        Span::styled("Tab ", key),
+        Span::styled("Space ", key),
         Span::raw("detail  "),
         Span::styled("q ", key),
         Span::raw("quit"),

@@ -1,4 +1,5 @@
 pub mod detail_panel;
+pub mod event_feed;
 pub mod layout;
 pub mod session_table;
 pub mod status_bar;

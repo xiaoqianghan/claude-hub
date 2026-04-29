@@ -35,6 +35,17 @@ impl SessionState {
             Self::Stale => 2,
         }
     }
+
+    pub fn style(&self) -> ratatui::style::Style {
+        use ratatui::style::{Color, Modifier, Style};
+        match self {
+            Self::WaitingForInput => Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+            Self::Working => Style::default().fg(Color::Green),
+            Self::Stale => Style::default().fg(Color::Red).add_modifier(Modifier::DIM),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

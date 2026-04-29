@@ -67,17 +67,25 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> anyhow::R
     });
 
     // Spawn crossterm input reader
-    let input_tx = tx.clone();
+    let input_tx = tx;
     tokio::spawn(async move {
         loop {
-            match tokio::task::spawn_blocking(event::read).await {
-                Ok(Ok(Event::Key(key))) => {
+            let evt = tokio::task::spawn_blocking(|| {
+                match event::poll(std::time::Duration::from_millis(200)) {
+                    Ok(true) => event::read().map(Some),
+                    Ok(false) => Ok(None),
+                    Err(e) => Err(e),
+                }
+            })
+            .await;
+            match evt {
+                Ok(Ok(Some(Event::Key(key)))) => {
                     if input_tx.send(AppEvent::Key(key)).is_err() {
                         break;
                     }
                 }
-                Ok(Ok(_)) => {}
-                _ => break,
+                Ok(Ok(Some(_) | None)) => {}
+                Ok(Err(_)) | Err(_) => break,
             }
         }
     });
@@ -101,7 +109,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> anyhow::R
                         app.refresh().await?;
                     }
                     KeyCode::Char('s') => app.cycle_sort(),
-                    KeyCode::Tab => {
+                    KeyCode::Char(' ') => {
                         app.show_detail = !app.show_detail;
                     }
                     KeyCode::Enter => {

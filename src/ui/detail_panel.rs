@@ -1,8 +1,8 @@
 use super::truncate_chars;
-use crate::model::session::{SessionInfo, SessionState};
+use crate::model::session::SessionInfo;
 use ratatui::Frame;
 use ratatui::layout::Rect;
-use ratatui::style::{Color, Modifier, Style};
+use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
@@ -73,9 +73,10 @@ pub fn render(frame: &mut Frame, area: Rect, session: Option<&SessionInfo>) {
     // Last assistant response
     if let Some(text) = &s.last_assistant_text {
         lines.push(Line::from(""));
-        let label = match s.state {
-            SessionState::WaitingForInput => "Claude replied: ",
-            _ => "Claude (latest): ",
+        let label = if s.state.needs_action() {
+            "Claude replied: "
+        } else {
+            "Claude (latest): "
         };
         lines.push(Line::from(vec![Span::styled(
             label,
@@ -87,13 +88,7 @@ pub fn render(frame: &mut Frame, area: Rect, session: Option<&SessionInfo>) {
         }
     }
 
-    let title_style = match s.state {
-        SessionState::WaitingForInput => Style::default()
-            .fg(Color::Yellow)
-            .add_modifier(Modifier::BOLD),
-        SessionState::Working => Style::default().fg(Color::Green),
-        SessionState::Stale => Style::default().fg(Color::Red),
-    };
+    let title_style = s.state.style();
     let title = format!(
         " {} {} — {} ",
         s.state.symbol(),

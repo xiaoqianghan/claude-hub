@@ -1,7 +1,12 @@
 use crate::data::correlator;
+use crate::model::feed::{FeedEvent, FeedEventKind};
 use crate::model::session::SessionInfo;
 use anyhow::Result;
+use chrono::Utc;
 use ratatui::widgets::TableState;
+use std::collections::{HashMap, VecDeque};
+
+const MAX_FEED_EVENTS: usize = 50;
 
 pub enum SortOrder {
     State,
@@ -16,6 +21,9 @@ pub struct App {
     pub in_tmux: bool,
     pub sort_order: SortOrder,
     pub should_quit: bool,
+    pub feed: VecDeque<FeedEvent>,
+    prev_states: HashMap<String, (crate::model::session::SessionState, String)>,
+    pending_removals: HashMap<String, String>,
 }
 
 impl App {
@@ -26,13 +34,26 @@ impl App {
             table_state.select(Some(0));
         }
 
+        let prev_states: HashMap<String, _> = sessions
+            .iter()
+            .map(|s| {
+                (
+                    s.session_id.clone(),
+                    (s.state.clone(), s.project_name.clone()),
+                )
+            })
+            .collect();
+
         let mut app = Self {
             sessions,
             table_state,
-            show_detail: true,
+            show_detail: false,
             in_tmux: crate::data::tmux::is_inside_tmux(),
             sort_order: SortOrder::State,
             should_quit: false,
+            feed: VecDeque::new(),
+            prev_states,
+            pending_removals: HashMap::new(),
         };
         app.apply_sort();
         Ok(app)
@@ -46,9 +67,9 @@ impl App {
             .map(|s| s.session_id.clone());
 
         self.sessions = correlator::build_session_list().await?;
+        self.detect_changes();
         self.apply_sort();
 
-        // Restore selection by session_id
         if let Some(id) = selected_id {
             let idx = self.sessions.iter().position(|s| s.session_id == id);
             self.table_state.select(idx.or(Some(0)));
@@ -59,6 +80,75 @@ impl App {
         }
 
         Ok(())
+    }
+
+    fn detect_changes(&mut self) {
+        let now = Utc::now();
+        let mut new_states = HashMap::new();
+        let current_ids: std::collections::HashSet<&str> = self
+            .sessions
+            .iter()
+            .map(|s| s.session_id.as_str())
+            .collect();
+
+        for s in &self.sessions {
+            new_states.insert(
+                s.session_id.clone(),
+                (s.state.clone(), s.project_name.clone()),
+            );
+
+            // Session reappeared after being pending removal — transient gap, cancel removal
+            if self.pending_removals.remove(&s.session_id).is_some() {
+                continue;
+            }
+
+            match self.prev_states.get(&s.session_id) {
+                Some((prev, _)) if *prev != s.state => {
+                    self.feed.push_back(FeedEvent {
+                        timestamp: now,
+                        project_name: s.project_name.clone(),
+                        kind: FeedEventKind::StateChanged {
+                            from: prev.clone(),
+                            to: s.state.clone(),
+                        },
+                    });
+                }
+                None => {
+                    self.feed.push_back(FeedEvent {
+                        timestamp: now,
+                        project_name: s.project_name.clone(),
+                        kind: FeedEventKind::SessionStarted,
+                    });
+                }
+                _ => {}
+            }
+        }
+
+        // Confirm pending removals (missing for 2 consecutive refreshes)
+        let confirmed: Vec<_> = self
+            .pending_removals
+            .drain()
+            .filter(|(id, _)| !current_ids.contains(id.as_str()))
+            .collect();
+        for (_, project) in confirmed {
+            self.feed.push_back(FeedEvent {
+                timestamp: now,
+                project_name: project,
+                kind: FeedEventKind::SessionEnded,
+            });
+        }
+
+        // Mark newly missing sessions as pending (require one more miss to confirm)
+        for (id, (_, project)) in &self.prev_states {
+            if !current_ids.contains(id.as_str()) {
+                self.pending_removals.insert(id.clone(), project.clone());
+            }
+        }
+
+        self.prev_states = new_states;
+        while self.feed.len() > MAX_FEED_EVENTS {
+            self.feed.pop_front();
+        }
     }
 
     pub fn next(&mut self) {
