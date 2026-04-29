@@ -199,7 +199,7 @@ impl App {
             }
             SortOrder::Activity => {
                 self.sessions
-                    .sort_by(|a, b| b.last_activity.cmp(&a.last_activity));
+                    .sort_by_key(|s| std::cmp::Reverse(s.last_activity));
             }
             SortOrder::Project => {
                 self.sessions

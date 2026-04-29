@@ -166,10 +166,8 @@ pub fn analyze(cwd: &str, session_id: &str) -> TranscriptSummary {
                     }
                 }
             }
-            "system" => {
-                if evt.subtype.as_deref() == Some("stop_hook_summary") {
-                    last_meaningful_event = Some("stop");
-                }
+            "system" if evt.subtype.as_deref() == Some("stop_hook_summary") => {
+                last_meaningful_event = Some("stop");
             }
             _ => {}
         }
