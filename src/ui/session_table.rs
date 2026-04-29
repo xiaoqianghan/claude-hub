@@ -15,7 +15,6 @@ pub fn render(
     let header = Row::new(vec![
         Cell::from(" #"),
         Cell::from("Status"),
-        Cell::from("Project"),
         Cell::from("Tmux"),
         Cell::from("Idle"),
         Cell::from("Tokens"),
@@ -33,14 +32,12 @@ pub fn render(
             let status_text = format!("{} {}", s.state.symbol(), s.state.label());
             let style = s.state.style();
 
-            let project = truncate_chars(&s.project_name, 24);
             let tmux_label = s.tmux_target.as_deref().unwrap_or("—").to_string();
-            let tmux_label = truncate_chars(&tmux_label, 20);
+            let tmux_label = truncate_chars(&tmux_label, 28);
 
             Row::new(vec![
                 Cell::from(format!("{:>2}", i + 1)),
                 Cell::from(Span::styled(status_text, style)),
-                Cell::from(project),
                 Cell::from(tmux_label).style(Style::default().fg(Color::DarkGray)),
                 Cell::from(s.idle_duration()),
                 Cell::from(s.tokens_display()),
@@ -70,8 +67,7 @@ pub fn render(
         [
             Constraint::Length(3),
             Constraint::Length(12),
-            Constraint::Length(26),
-            Constraint::Length(22),
+            Constraint::Length(30),
             Constraint::Length(8),
             Constraint::Length(10),
         ],
