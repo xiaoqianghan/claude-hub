@@ -19,6 +19,7 @@ pub fn render(frame: &mut Frame, area: Rect, feed: &std::collections::VecDeque<F
     let lines: Vec<Line> = feed
         .iter()
         .rev()
+        .filter(|e| matches!(e.kind, FeedEventKind::StateChanged { .. }))
         .take(max_visible)
         .map(|e| {
             let dim = Style::default().fg(Color::DarkGray);
@@ -38,10 +39,14 @@ pub fn render(frame: &mut Frame, area: Rect, feed: &std::collections::VecDeque<F
         })
         .collect();
 
-    let title = if feed.is_empty() {
+    let state_change_count = feed
+        .iter()
+        .filter(|e| matches!(e.kind, FeedEventKind::StateChanged { .. }))
+        .count();
+    let title = if state_change_count == 0 {
         " Events ".to_string()
     } else {
-        format!(" Events ({}) ", feed.len())
+        format!(" Events ({}) ", state_change_count)
     };
 
     let p = Paragraph::new(lines).block(

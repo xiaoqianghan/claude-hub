@@ -54,10 +54,10 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> anyhow::R
         }
     });
 
-    // Spawn tick timer (refresh every 5s for elapsed time display)
+    // Spawn tick timer (refresh every 2s for state + elapsed time display)
     let tick_tx = tx.clone();
     tokio::spawn(async move {
-        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(5));
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(2));
         loop {
             interval.tick().await;
             if tick_tx.send(AppEvent::Tick).is_err() {
@@ -127,7 +127,7 @@ async fn run(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> anyhow::R
                 app.refresh().await?;
             }
             Some(AppEvent::Tick) => {
-                // Just re-render to update elapsed/idle times — no data refresh needed
+                app.refresh().await?;
             }
             None => break,
         }
