@@ -1,4 +1,3 @@
-use super::truncate_chars;
 use crate::model::session::SessionInfo;
 use ratatui::Frame;
 use ratatui::layout::Constraint;
@@ -33,7 +32,6 @@ pub fn render(
             let style = s.state.style();
 
             let tmux_label = s.tmux_target.as_deref().unwrap_or("—").to_string();
-            let tmux_label = truncate_chars(&tmux_label, 28);
 
             Row::new(vec![
                 Cell::from(format!("{:>2}", i + 1)),
@@ -67,7 +65,7 @@ pub fn render(
         [
             Constraint::Length(3),
             Constraint::Length(12),
-            Constraint::Length(30),
+            Constraint::Fill(1),
             Constraint::Length(8),
             Constraint::Length(10),
         ],
