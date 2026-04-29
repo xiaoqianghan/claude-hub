@@ -36,7 +36,7 @@ pub fn render(
             Row::new(vec![
                 Cell::from(format!("{:>2}", i + 1)),
                 Cell::from(Span::styled(status_text, style)),
-                Cell::from(tmux_label).style(Style::default().fg(Color::DarkGray)),
+                Cell::from(tmux_label),
                 Cell::from(s.idle_duration()),
                 Cell::from(s.tokens_display()),
             ])
